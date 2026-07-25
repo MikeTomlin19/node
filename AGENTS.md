@@ -19,6 +19,12 @@ Every repo-scoped endpoint must bind the caller to an authorization decision bef
 - A new mutation handler also gets a row in `every_in_scope_mutation_has_its_gate` naming its gate type; the per-handler row is the point of that test.
 - A table-driven deny suite covering every deny-bearing route is in review (#194, #195). If it is present in your checkout, add a probe row there for any new deny-bearing route.
 
+## Verifying signatures and certificates
+
+- Derive the verifying key from something outside the artifact you are checking: the node's own DID, a pinned or configured value, a peers lookup. A key read from a field of the object being verified (`Did::from_str(&cert.node_did)`) only proves the artifact is self-consistent, and identities here are permissionless, so anyone can mint a keypair, name it in the artifact, self-sign, and be told it is valid. A mismatch against that anchor has to fail the result, not log a warning.
+- A handler whose correct answer is "valid" needs at least one test that drives it to valid using an artifact built to be accepted for the wrong reason: well-formed, fully populated, and forged. A suite that only asserts the invalid cases cannot tell "rejects what it should" apart from "accepts everything."
+- The fields a signature covers are a versioned format. Adding one invalidates every artifact already signed, so give the payload a version, keep a path that verifies the older form, and add a test that verifies an artifact signed before your change.
+
 ## Removing a serving path
 
 When a fix removes a path that used to serve content, the same PR must add a test asserting the removed path now denies. The deletion is what turns that test green; without it the path can quietly come back.
